@@ -1,0 +1,144 @@
+# source_schemas.yaml
+# Expected dtypes for canonical columns after field_mappings.yaml renaming.
+# Used by canonicalize.py to cast and validate types.
+# Types: str, int64, float64, float32, bool, datetime64
+
+assessor:
+  pin:                          str
+  tax_year:                     int64
+  township_code:                str
+  property_class:               str
+  neighborhood_code:            str
+  address:                      str
+  city:                         str
+  zip_code:                     str
+  year_built:                   float64      # nullable
+  building_sq_ft:               float64
+  land_sq_ft:                   float64
+  num_bedrooms:                 float64
+  num_bathrooms:                float64
+  num_rooms:                    float64
+  garage_indicator:             bool
+  estimated_market_value:       float64
+  assessed_value_building:      float64
+  assessed_value_land:          float64
+  homeowner_exemption:          bool
+  senior_exemption:             bool
+  senior_freeze_exemption:      bool
+  sale_date_1:                  datetime64
+  sale_price_1:                 float64
+  sale_date_2:                  datetime64
+  sale_price_2:                 float64
+  sale_date_3:                  datetime64
+  sale_price_3:                 float64
+  deed_type:                    str
+  latitude:                     float64
+  longitude:                    float64
+
+recorder:
+  pin:                          str
+  grantor:                      str
+  grantee:                      str
+  deed_date:                    datetime64
+  instrument_type:              str
+  grantee_mailing_address:      str
+  grantee_mailing_city:         str
+  grantee_mailing_state:        str
+  tax_delinquency_flag:         bool
+  delinquent_tax_amount:        float64
+  delinquent_tax_years:         float64
+  tax_annual_amount:            float64
+
+permits:
+  permit_number:                str
+  permit_type:                  str
+  issue_date:                   datetime64
+  total_fee:                    float64
+  work_description:             str
+  address:                      str          # assembled from parts in canonicalize
+  latest_permit_date:           datetime64   # derived aggregate
+  permit_count_5yr:             int64        # derived aggregate
+
+violations:
+  violation_last_modified:      datetime64
+  violation_date:               datetime64
+  violation_code:               str
+  violation_status:             str
+  address:                      str
+  violation_count_open:         int64        # derived aggregate
+
+census:
+  block_group_geoid:                  str
+  tract_median_age:                   float64
+  tract_median_household_income:      float64
+  tract_owner_occupied_units:         float64
+  tract_renter_occupied_units:        float64
+  tract_total_occupied_units:         float64
+  tract_median_year_moved_in:         float64
+  tract_households_with_children:     float64
+  tract_total_households:             float64
+  tract_total_population:             float64
+  tract_median_home_value:            float64
+  tract_median_gross_rent:            float64
+  tract_vacant_units:                 float64
+  tract_total_housing_units:          float64
+  # age band raw counts (aggregated to pct_ fields in feature_engineer)
+  tract_pop_65_to_66:                 float64
+  tract_pop_67_to_69:                 float64
+  tract_pop_70_to_74:                 float64
+  tract_pop_75_to_79:                 float64
+  tract_pop_80_to_84:                 float64
+  tract_pop_85_plus:                  float64
+  tract_pop_f65_to_66:                float64
+  tract_pop_f67_to_69:                float64
+  tract_pop_f70_to_74:                float64
+  tract_pop_f75_to_79:                float64
+  tract_pop_f80_to_84:                float64
+  tract_pop_f85_plus:                 float64
+  tract_pop_m35_to_39:                float64
+  tract_pop_m40_to_44:                float64
+  tract_pop_m45_to_49:                float64
+  tract_pop_m50_to_54:                float64
+  tract_pop_f35_to_39:                float64
+  tract_pop_f40_to_44:                float64
+  tract_pop_f45_to_49:                float64
+  tract_pop_f50_to_54:                float64
+
+zillow:
+  zip_code:                     str
+  zip_zhvi:                     float64
+  zip_zori:                     float64
+  zip_median_sale_price:        float64
+  zip_median_days_on_market:    float64
+  zip_yoy_price_change_pct:     float64
+  zip_pct_listings_price_cut:   float64
+  zip_inventory:                float64
+  zip_median_list_price:        float64
+  zip_price_to_rent_ratio:      float64      # derived in zillow ingester
+
+hud:
+  fmr_studio:                   float64
+  fmr_1br:                      float64
+  fmr_2br:                      float64
+  fmr_3br:                      float64
+  fmr_4br:                      float64
+
+propwire:
+  pin:                          str
+  address:                      str
+  owner_name:                   str
+  owner_mailing_address:        str
+  owner_mailing_city:           str
+  owner_mailing_state:          str
+  absentee_owner_flag:          bool
+  corporate_owner_flag:         bool
+  portfolio_size:               float64
+  propwire_equity_pct:          float64
+  propwire_equity_dollar:       float64
+  open_lien_count:              float64
+  mortgage_origination_date:    datetime64
+  mortgage_amount:              float64
+  mortgage_type:                str
+  lender_name:                  str
+  skip_trace_phone:             str
+  skip_trace_email:             str

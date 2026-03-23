@@ -1,0 +1,153 @@
+# field_mappings.yaml
+# Maps raw source column names → canonical snake_case field names.
+# Used by canonicalize.py to rename columns before type casting.
+# Keys are source names; values are {raw_col: canonical_col} dicts.
+# Only columns we actually use are listed — extras are dropped.
+
+assessor:
+  # From c49d-89sn (locations)
+  pin:                          pin
+  property_address:             address
+  property_city:                city
+  property_zip:                 zip_code
+  latitude:                     latitude
+  longitude:                    longitude
+  mailing_address:              owner_mailing_address
+  mailing_city:                 owner_mailing_city
+  mailing_state:                owner_mailing_state
+  mailing_zip:                  owner_mailing_zip
+  township_name:                township_name
+  nbhd:                         neighborhood_code
+  # From bcnq-qi2z (characteristics)
+  class:                        property_class
+  tax_year:                     tax_year
+  town_code:                    township_code
+  beds:                         num_bedrooms
+  fbath:                        num_bathrooms
+  rooms:                        num_rooms
+  bldg_sf:                      building_sq_ft
+  hd_sf:                        land_sq_ft
+  age:                          building_age
+  garage_indicator:             garage_indicator
+  pri_est_bldg:                 assessed_value_building
+  pri_est_land:                 assessed_value_land
+  total_units:                  total_units
+  # From wvhk-k5uv (sales — pivoted)
+  sale_date_1:                  sale_date_1
+  sale_price_1:                 sale_price_1
+  sale_date_2:                  sale_date_2
+  sale_price_2:                 sale_price_2
+  sale_date_3:                  sale_date_3
+  sale_price_3:                 sale_price_3
+  deed_type_1:                  deed_type
+
+recorder:
+  pin:                          pin
+  grantor:                      grantor
+  grantee:                      grantee
+  deed_date:                    deed_date
+  instrument_type:              instrument_type
+  grantee_mailing_address:      grantee_mailing_address
+  grantee_mailing_city:         grantee_mailing_city
+  grantee_mailing_state:        grantee_mailing_state
+  tax_delinquency_flag:         tax_delinquency_flag
+  delinquent_tax_amount:        delinquent_tax_amount
+  delinquent_tax_years:         delinquent_tax_years
+  tax_annual_amount:            tax_annual_amount
+
+permits:
+  permit_:                      permit_number
+  permit_type:                  permit_type
+  issue_date:                   issue_date
+  total_fee:                    total_fee
+  work_description:             work_description
+  street_number:                permit_street_number
+  street_direction:             permit_street_direction
+  street_name:                  permit_street_name
+  suffix:                       permit_street_suffix
+  # address assembled from parts in canonicalize step
+  latitude:                     permit_latitude
+  longitude:                    permit_longitude
+
+violations:
+  violation_last_modified_date: violation_last_modified
+  violation_date:               violation_date
+  violation_code:               violation_code
+  violation_status:             violation_status
+  address:                      address
+  latitude:                     violation_latitude
+  longitude:                    violation_longitude
+
+census:
+  GEO_ID:                       block_group_geoid
+  B01002_001E:                  tract_median_age
+  B19013_001E:                  tract_median_household_income
+  B25003_002E:                  tract_owner_occupied_units
+  B25003_003E:                  tract_renter_occupied_units
+  B25003_001E:                  tract_total_occupied_units
+  B25035_001E:                  tract_median_year_moved_in
+  B11005_002E:                  tract_households_with_children
+  B11005_001E:                  tract_total_households
+  B01001_020E:                  tract_pop_65_to_66
+  B01001_021E:                  tract_pop_67_to_69
+  B01001_022E:                  tract_pop_70_to_74
+  B01001_023E:                  tract_pop_75_to_79
+  B01001_024E:                  tract_pop_80_to_84
+  B01001_025E:                  tract_pop_85_plus
+  B01001_044E:                  tract_pop_f65_to_66
+  B01001_045E:                  tract_pop_f67_to_69
+  B01001_046E:                  tract_pop_f70_to_74
+  B01001_047E:                  tract_pop_f75_to_79
+  B01001_048E:                  tract_pop_f80_to_84
+  B01001_049E:                  tract_pop_f85_plus
+  B01001_013E:                  tract_pop_m35_to_39
+  B01001_014E:                  tract_pop_m40_to_44
+  B01001_015E:                  tract_pop_m45_to_49
+  B01001_016E:                  tract_pop_m50_to_54
+  B01001_037E:                  tract_pop_f35_to_39
+  B01001_038E:                  tract_pop_f40_to_44
+  B01001_039E:                  tract_pop_f45_to_49
+  B01001_040E:                  tract_pop_f50_to_54
+  B01001_001E:                  tract_total_population
+  B25077_001E:                  tract_median_home_value
+  B25064_001E:                  tract_median_gross_rent
+  B25002_003E:                  tract_vacant_units
+  B25002_001E:                  tract_total_housing_units
+
+zillow:
+  RegionName:                   zip_code
+  zhvi:                         zip_zhvi
+  zori:                         zip_zori
+  median_sale_price:            zip_median_sale_price
+  days_to_pending:              zip_median_days_on_market
+  yoy_price_change:             zip_yoy_price_change_pct
+  pct_listings_price_cut:       zip_pct_listings_price_cut
+  inventory:                    zip_inventory
+  median_list_price:            zip_median_list_price
+
+hud:
+  fmr_0:                        fmr_studio
+  fmr_1:                        fmr_1br
+  fmr_2:                        fmr_2br
+  fmr_3:                        fmr_3br
+  fmr_4:                        fmr_4br
+
+propwire:
+  owner_name:                   owner_name
+  owner_mailing_address:        owner_mailing_address
+  owner_mailing_city:           owner_mailing_city
+  owner_mailing_state:          owner_mailing_state
+  absentee_owner:               absentee_owner_flag
+  corporate_owner:              corporate_owner_flag
+  portfolio_size:               portfolio_size
+  equity_percent:               propwire_equity_pct
+  equity_amount:                propwire_equity_dollar
+  open_lien_count:              open_lien_count
+  mortgage_origination_date:    mortgage_origination_date
+  mortgage_amount:              mortgage_amount
+  mortgage_type:                mortgage_type
+  lender_name:                  lender_name
+  phone:                        skip_trace_phone
+  email:                        skip_trace_email
+  pin:                          pin
+  address:                      address

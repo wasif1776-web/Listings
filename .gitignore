@@ -1,10 +1,12 @@
-# Data files (raw data should not be committed)
-data/raw/*
-data/processed/*
-data/outputs/*
-!data/raw/.gitkeep
-!data/processed/.gitkeep
-!data/outputs/.gitkeep
+# Data files (parquet/xlsx/csv not committed; directory stubs kept)
+data/raw/**/*.parquet
+data/processed/**/*.parquet
+data/outputs/**/*.parquet
+!data/outputs/scored_latest.parquet
+data/outputs/**/*.xlsx
+data/outputs/**/*.csv
+data/reference/**/*.parquet
+data/last_run_metadata.json
 
 # Python
 __pycache__/

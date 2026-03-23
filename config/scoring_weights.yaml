@@ -1,0 +1,255 @@
+# scoring_weights.yaml
+# Defines all 10 propensity scoring models.
+# Each model is a list of signal definitions:
+#   signal:    feature column name
+#   condition: comparison string evaluated against the column value
+#              supports: >=, <=, >, <, ==, !=, between (inclusive range), high, low
+#   points:    integer points awarded when condition is true (additive)
+#
+# "high" / "low" conditions are evaluated relative to the ZIP 60610
+# distribution (above/below the 75th / 25th percentile respectively).
+# Percentile thresholds are computed at scoring time from the full parcel universe.
+#
+# All models are loaded and applied by src/scoring/engine.py.
+
+likely_to_sell:
+  - signal: years_owned
+    condition: ">= 7"
+    points: 15
+  - signal: years_owned
+    condition: ">= 15"
+    points: 10
+  - signal: estimated_equity_pct
+    condition: ">= 0.40"
+    points: 15
+  - signal: tax_delinquency_flag
+    condition: "== True"
+    points: 20
+  - signal: absentee_owner_flag
+    condition: "== True"
+    points: 10
+  - signal: open_violation_flag
+    condition: "== True"
+    points: 10
+  - signal: mortgage_type
+    condition: "== ARM"
+    points: 10
+  - signal: recent_permit_flag
+    condition: "== True"
+    points: 10
+  - signal: senior_flag
+    condition: "== True"
+    points: 5
+  - signal: portfolio_size
+    condition: "> 3"
+    points: 5
+
+likely_to_buy:
+  - signal: tract_pct_35_to_54
+    condition: high
+    points: 15
+  - signal: num_bedrooms
+    condition: "<= 2"
+    points: 15
+  - signal: tract_pct_households_with_children
+    condition: high
+    points: 15
+  - signal: tract_median_household_income
+    condition: high
+    points: 10
+  - signal: years_owned
+    condition: "between 3 7"
+    points: 10
+  - signal: estimated_equity_pct
+    condition: ">= 0.30"
+    points: 10
+  - signal: zip_yoy_price_change_pct
+    condition: "> 0"
+    points: 10
+  - signal: owner_occupied_flag
+    condition: "== True"
+    points: 5
+
+downsize:
+  - signal: senior_flag
+    condition: "== True"
+    points: 20
+  - signal: tract_pct_65_plus
+    condition: high
+    points: 10
+  - signal: years_owned
+    condition: ">= 15"
+    points: 15
+  - signal: num_bedrooms
+    condition: ">= 3"
+    points: 10
+  - signal: building_sq_ft
+    condition: ">= 1500"
+    points: 10
+  - signal: estimated_equity_pct
+    condition: ">= 0.60"
+    points: 15
+  - signal: tract_pct_households_with_children
+    condition: low
+    points: 10
+  - signal: owner_occupied_flag
+    condition: "== True"
+    points: 5
+  - signal: recent_permit_flag
+    condition: "== True"
+    points: 5
+
+upsize:
+  - signal: tract_pct_households_with_children
+    condition: high
+    points: 20
+  - signal: num_bedrooms
+    condition: "<= 2"
+    points: 20
+  - signal: tract_median_household_income
+    condition: high
+    points: 15
+  - signal: years_owned
+    condition: "between 2 5"
+    points: 15
+  - signal: tract_pct_35_to_54
+    condition: high
+    points: 10
+  - signal: building_sq_ft
+    condition: "< 1000"
+    points: 10
+  - signal: owner_occupied_flag
+    condition: "== True"
+    points: 5
+  - signal: estimated_equity_pct
+    condition: ">= 0.20"
+    points: 5
+
+near_retirement:
+  - signal: senior_flag
+    condition: "== True"
+    points: 25
+  - signal: tract_pct_65_plus
+    condition: high
+    points: 15
+  - signal: years_owned
+    condition: ">= 10"
+    points: 15
+  - signal: estimated_equity_pct
+    condition: ">= 0.50"
+    points: 15
+  - signal: num_bedrooms
+    condition: ">= 3"
+    points: 10
+  - signal: tract_pct_households_with_children
+    condition: low
+    points: 10
+  - signal: absentee_owner_flag
+    condition: "== True"
+    points: 5
+  - signal: open_lien_count
+    condition: "== 0"
+    points: 5
+
+relocation_risk:
+  - signal: out_of_state_flag
+    condition: "== True"
+    points: 30
+  - signal: absentee_owner_flag
+    condition: "== True"
+    points: 20
+  - signal: corporate_owner_flag
+    condition: "== True"
+    points: 15
+  - signal: tax_delinquency_flag
+    condition: "== True"
+    points: 15
+  - signal: open_violation_flag
+    condition: "== True"
+    points: 10
+  - signal: years_owned
+    condition: ">= 7"
+    points: 10
+
+school_district_movers:
+  - signal: tract_pct_households_with_children
+    condition: high
+    points: 30
+  - signal: num_bedrooms
+    condition: "<= 2"
+    points: 20
+  - signal: years_owned
+    condition: "between 2 6"
+    points: 20
+  - signal: tract_median_household_income
+    condition: high
+    points: 15
+  - signal: owner_occupied_flag
+    condition: "== True"
+    points: 10
+  - signal: zip_yoy_price_change_pct
+    condition: "> 0"
+    points: 5
+
+investor:
+  - signal: investor_flag
+    condition: "== True"
+    points: 25
+  - signal: absentee_owner_flag
+    condition: "== True"
+    points: 20
+  - signal: portfolio_size
+    condition: "> 1"
+    points: 15
+  - signal: price_to_rent_ratio
+    condition: "<= 20"
+    points: 15
+  - signal: corporate_owner_flag
+    condition: "== True"
+    points: 15
+  - signal: zip_zori
+    condition: high
+    points: 10
+
+likely_to_rent_out:
+  - signal: investor_flag
+    condition: "== True"
+    points: 20
+  - signal: absentee_owner_flag
+    condition: "== True"
+    points: 20
+  - signal: price_to_rent_ratio
+    condition: "<= 18"
+    points: 20
+  - signal: zip_zori
+    condition: high
+    points: 15
+  - signal: open_lien_count
+    condition: "== 0"
+    points: 10
+  - signal: estimated_equity_pct
+    condition: ">= 0.40"
+    points: 10
+  - signal: corporate_owner_flag
+    condition: "== True"
+    points: 5
+
+upgrade_renters:
+  - signal: tract_pct_renter_occupied
+    condition: high
+    points: 25
+  - signal: tract_median_gross_rent
+    condition: high
+    points: 20
+  - signal: tract_median_household_income
+    condition: high
+    points: 20
+  - signal: zip_price_to_rent_ratio
+    condition: high
+    points: 15
+  - signal: tract_pct_35_to_54
+    condition: high
+    points: 10
+  - signal: zip_median_days_on_market
+    condition: low
+    points: 10

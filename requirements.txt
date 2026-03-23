@@ -1,0 +1,27 @@
+# Core data
+pandas>=2.0
+pyarrow>=14.0
+geopandas>=0.14
+shapely>=2.0
+
+# Ingestion
+requests>=2.31
+sodapy>=2.2
+census>=0.8.19
+
+# Address matching
+rapidfuzz>=3.6
+
+# Configuration
+python-dotenv>=1.0
+pyyaml>=6.0
+
+# Dashboard
+streamlit>=1.32
+pydeck>=0.8
+
+# Export
+openpyxl>=3.1
+
+# Testing
+pytest>=8.0

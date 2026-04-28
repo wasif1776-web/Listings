@@ -3,6 +3,7 @@ data/raw/**/*.parquet
 data/processed/**/*.parquet
 data/outputs/**/*.parquet
 !data/outputs/scored_latest.parquet
+!data/outputs/60610.parquet
 data/outputs/**/*.xlsx
 data/outputs/**/*.csv
 data/reference/**/*.parquet

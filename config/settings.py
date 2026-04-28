@@ -13,7 +13,7 @@ load_dotenv(_ENV_PATH)
 
 # ── Geography ────────────────────────────────────────────────────────────────
 
-TARGET_ZIP = "60610"
+TARGET_ZIP = "60610"  # default; overridden at runtime by dashboard
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -105,3 +105,12 @@ PARQUET_COMPRESSION = "snappy"
 
 DASHBOARD_MAP_CENTER = {"lat": 41.8981, "lon": -87.6298}   # ZIP 60610 centroid
 DASHBOARD_MAP_ZOOM   = 13
+
+# ── Per-ZIP Helpers ──────────────────────────────────────────────────────────
+
+DATA_STALENESS_DAYS = 30
+
+
+def scored_path_for_zip(zip_code: str) -> Path:
+    """Return the parquet path for a given ZIP code."""
+    return OUTPUTS_DIR / f"{zip_code}.parquet"

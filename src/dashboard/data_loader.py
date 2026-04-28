@@ -7,25 +7,23 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 
+from config.settings import scored_path_for_zip
 
-def _scored_mtime() -> float:
-    """Return modification time of scored_latest.parquet (used as cache key)."""
-    p = Path(__file__).resolve().parents[2] / "data" / "outputs" / "scored_latest.parquet"
+
+def _scored_mtime(zip_code: str = "60610") -> float:
+    """Return modification time of the scored parquet for a ZIP (used as cache key)."""
+    p = scored_path_for_zip(zip_code)
     if p.exists():
         return os.path.getmtime(p)
     return 0.0
 
 
-@st.cache_data(ttl=300, show_spinner="Loading scored data…")
-def load_scored_data(_mtime: float | None = None) -> pd.DataFrame:
-    """Read ``scored_latest.parquet`` with Streamlit caching.
-
-    The *_mtime* parameter is passed solely to bust the cache when the
-    file changes on disk — callers should pass ``_scored_mtime()``.
-    """
-    p = Path(__file__).resolve().parents[2] / "data" / "outputs" / "scored_latest.parquet"
+@st.cache_data(ttl=300, show_spinner="Loading scored data...")
+def load_scored_data(zip_code: str, _mtime: float | None = None) -> pd.DataFrame:
+    """Read the scored parquet for *zip_code* with Streamlit caching."""
+    p = scored_path_for_zip(zip_code)
     if not p.exists():
-        st.error(f"Scored data not found at `{p}`. Run the pipeline first (`python main.py`).")
+        st.error(f"Scored data not found at `{p}`. Click 'Get Data' to run the pipeline.")
         st.stop()
     return pd.read_parquet(p)
 

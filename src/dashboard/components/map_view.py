@@ -5,7 +5,7 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 
-from config.settings import DASHBOARD_MAP_CENTER, DASHBOARD_MAP_ZOOM
+from config.settings import DASHBOARD_MAP_ZOOM
 
 
 def _score_to_rgb(score: float) -> list[int]:
@@ -70,8 +70,8 @@ def render_map(df: pd.DataFrame, score_col: str) -> None:
     )
 
     view_state = pdk.ViewState(
-        latitude=DASHBOARD_MAP_CENTER["lat"],
-        longitude=DASHBOARD_MAP_CENTER["lon"],
+        latitude=float(map_df["lat"].mean()),
+        longitude=float(map_df["lon"].mean()),
         zoom=DASHBOARD_MAP_ZOOM,
         pitch=0,
     )

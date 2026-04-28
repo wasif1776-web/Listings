@@ -1,15 +1,15 @@
 # Product Requirements Document
 ## Listings — Real Estate Propensity Scoring System
-**Version:** 1.0
-**Date:** 2026-03-20
+**Version:** 2.0
+**Date:** 2026-03-26
 **Target ZIP:** 60610 (Near North Side / Gold Coast, Chicago IL)
-**Status:** Draft
+**Status:** Active
 
 ---
 
 ## 1. Problem Statement
 
-Real estate agents working a specific Chicago market need to identify which homeowners are most likely to sell, buy, upsize, downsize, or relocate — before those homeowners list on MLS. Manual prospecting is time-consuming and low-signal. The goal is to build a data-driven propensity scoring system that ranks every property in ZIP 60610 by likelihood of a near-term real estate event, using exclusively free and low-cost public data sources.
+Real estate agents working a specific Chicago market need to identify which homeowners are most likely to sell, buy, upsize, downsize, or relocate — before those homeowners list on MLS. Manual prospecting is time-consuming and low-signal. The goal is to build a data-driven propensity scoring system that ranks every property in ZIP 60610 by likelihood of a near-term real estate event, using free public data sources supplemented by paid property intelligence platforms for maximum accuracy.
 
 ---
 
@@ -20,11 +20,10 @@ Real estate agents working a specific Chicago market need to identify which home
 - Join all sources at the parcel (PIN / address) level into a single enriched property record
 - Compute propensity scores for 10 distinct use cases
 - Produce two outputs: (1) a ranked, exportable CSV/spreadsheet for agent review and (2) a dashboard for interactive exploration
-- Achieve $0 data cost for the POC; supplemental paid data (PropStream, PropertyRadar) considered for v2
+- Leverage PropStream ($99/mo) for high-signal property intelligence (pre-foreclosure, life events, mortgage details, listing history) alongside free public data sources
 
 **Non-Goals**
-- MLS integration in v1
-- Automated outreach / CRM sync in v1
+- Automated outreach / CRM sync
 - Nationwide or multi-ZIP coverage in v1
 - Real-time data (batch/monthly refresh is acceptable)
 
@@ -207,6 +206,62 @@ Real estate agents working a specific Chicago market need to identify which home
 | `skip_trace_phone` | Owner phone (if skip traced, $0.10/record) | Outreach |
 | `skip_trace_email` | Owner email (if skip traced) | Outreach |
 
+### 4.9 PropStream (Paid — $99/mo)
+**URL:** https://www.propstream.com
+**Cost:** $99/month — unlimited searches, bulk export, API access
+**Refresh:** Daily (foreclosure/listing data) / Monthly (mortgage/ownership)
+**Join Key:** Address / APN (PIN equivalent)
+
+#### 4.9.1 Pre-Foreclosure & Distress
+
+| Field | Description | Use Cases |
+|---|---|---|
+| `nod_flag` | Notice of Default filed (Y/N) | Strongest sell signal |
+| `lis_pendens_flag` | Lis pendens (lawsuit pending) filed (Y/N) | Legal distress |
+| `foreclosure_status` | Status: pre-foreclosure, auction, REO, none | Distress stage |
+| `auction_date` | Scheduled foreclosure auction date | Urgency / timeline |
+| `default_amount` | Dollar amount in default | Distress severity |
+
+#### 4.9.2 Life Event Triggers
+
+| Field | Description | Use Cases |
+|---|---|---|
+| `probate_flag` | Property in probate (Y/N) | Inherited property — likely to sell |
+| `divorce_flag` | Owner involved in divorce filing (Y/N) | Forced sale signal |
+| `inherited_flag` | Property recently inherited (Y/N) | New owner may sell |
+| `death_in_household_flag` | Death recorded at property address (Y/N) | Life transition |
+
+#### 4.9.3 Enhanced Mortgage Data
+
+| Field | Description | Use Cases |
+|---|---|---|
+| `estimated_loan_balance` | Current estimated mortgage balance | LTV / equity calc |
+| `ltv_ratio` | Loan-to-value ratio (current) | Equity signal |
+| `interest_rate` | Mortgage interest rate | Rate sensitivity |
+| `rate_type` | Fixed vs. ARM (with reset date if ARM) | Rate reset risk |
+| `refi_count` | Number of refinances on record | Financial activity |
+| `second_mortgage_flag` | Second mortgage / HELOC present (Y/N) | Leverage signal |
+| `second_mortgage_amount` | Second mortgage balance | Total debt calc |
+
+#### 4.9.4 Listing History (MLS-Derived)
+
+| Field | Description | Use Cases |
+|---|---|---|
+| `prev_listed_flag` | Property was previously listed (Y/N) | Re-list signal |
+| `expired_listing_flag` | Most recent listing expired or was withdrawn (Y/N) | Failed sale — likely to re-list |
+| `last_list_date` | Date of most recent listing | Recency of intent |
+| `last_list_price` | Most recent list price | Pricing context |
+| `days_since_delisted` | Days since listing expired/withdrawn | Re-list timing |
+| `listing_count` | Total number of times property has been listed | Sale difficulty |
+
+#### 4.9.5 Property-Level AVM
+
+| Field | Description | Use Cases |
+|---|---|---|
+| `propstream_avm` | PropStream automated valuation | Real-time equity calc |
+| `avm_confidence_score` | Confidence level of the AVM estimate | Data quality |
+| `avm_vs_assessed_pct` | `(propstream_avm - assessed_value) / assessed_value` | Value gap signal |
+
 ---
 
 ## 5. Derived / Engineered Fields
@@ -229,6 +284,13 @@ These fields are computed during the processing step from the raw source data ab
 | `price_to_rent_ratio` | `estimated_market_value / (fmr_Nbr * 12)` using bedroom count | Investor calc |
 | `appreciation_vs_zip` | `(estimated_market_value - sale_price_1) / sale_price_1 - zip_yoy_price_change_pct` | Relative gain |
 | `sale_count` | Count of non-null sale_date fields | Transaction frequency |
+| `life_event_flag` | `probate_flag OR divorce_flag OR inherited_flag OR death_in_household_flag` | Any life event trigger |
+| `distress_flag` | `nod_flag OR lis_pendens_flag OR foreclosure_status != 'none'` | Any pre-foreclosure distress |
+| `total_debt` | `estimated_loan_balance + second_mortgage_amount` | True leverage |
+| `true_ltv` | `total_debt / propstream_avm` (uses real-time AVM) | Accurate equity position |
+| `negative_equity_flag` | `true_ltv > 1.0` | Underwater signal |
+| `rate_reset_risk_flag` | `rate_type == 'ARM' AND mortgage_origination_date > today - 5yr` | ARM reset window |
+| `failed_listing_flag` | `expired_listing_flag == True AND days_since_delisted <= 365` | Recent failed sale |
 
 ---
 
@@ -240,14 +302,17 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 
 | Signal | Points | Source |
 |---|---|---|
-| `years_owned >= 7` | +15 | Assessor |
-| `years_owned >= 15` | +10 (additive) | Assessor |
-| `estimated_equity_pct >= 0.40` | +15 | Derived |
-| `tax_delinquency_flag == True` | +20 | Cook County |
+| `nod_flag == True` | +25 | PropStream |
+| `life_event_flag == True` | +20 | PropStream (derived) |
+| `failed_listing_flag == True` | +20 | PropStream (derived) |
+| `tax_delinquency_flag == True` | +15 | Cook County |
+| `years_owned >= 7` | +10 | Assessor |
+| `years_owned >= 15` | +5 (additive) | Assessor |
+| `estimated_equity_pct >= 0.40` | +10 | Derived |
 | `absentee_owner_flag == True` | +10 | Recorder / PropWire |
-| `open_violation_flag == True` | +10 | Chicago Data Portal |
-| `mortgage_type == 'ARM'` | +10 | PropWire |
-| `recent_permit_flag == True` | +10 | Chicago Data Portal |
+| `open_violation_flag == True` | +5 | Chicago Data Portal |
+| `rate_reset_risk_flag == True` | +10 | PropStream (derived) |
+| `recent_permit_flag == True` | +5 | Chicago Data Portal |
 | `senior_flag == True` | +5 | Assessor |
 | `portfolio_size > 3` | +5 | PropWire |
 
@@ -269,11 +334,12 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 | Signal | Points | Source |
 |---|---|---|
 | `senior_flag == True` | +20 | Assessor |
+| `death_in_household_flag == True` | +15 | PropStream |
 | `tract_pct_65_plus high` | +10 | Census |
-| `years_owned >= 15` | +15 | Assessor |
+| `years_owned >= 15` | +10 | Assessor |
 | `num_bedrooms >= 3` | +10 | Assessor |
 | `building_sq_ft >= 1500` | +10 | Assessor |
-| `estimated_equity_pct >= 0.60` | +15 | Derived |
+| `estimated_equity_pct >= 0.60` | +10 | Derived |
 | `tract_pct_households_with_children low` | +10 | Census |
 | `owner_occupied_flag == True` | +5 | Assessor |
 | `recent_permit_flag == True` | +5 | Chicago Data Portal |
@@ -295,12 +361,14 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 
 | Signal | Points | Source |
 |---|---|---|
-| `senior_flag == True` | +25 | Assessor |
-| `tract_pct_65_plus high` | +15 | Census |
-| `years_owned >= 10` | +15 | Assessor |
-| `estimated_equity_pct >= 0.50` | +15 | Derived |
+| `senior_flag == True` | +20 | Assessor |
+| `life_event_flag == True` | +20 | PropStream (derived) |
+| `death_in_household_flag == True` | +15 | PropStream |
+| `tract_pct_65_plus high` | +10 | Census |
+| `years_owned >= 10` | +10 | Assessor |
+| `estimated_equity_pct >= 0.50` | +10 | Derived |
 | `num_bedrooms >= 3` | +10 | Assessor |
-| `tract_pct_households_with_children low` | +10 | Census |
+| `tract_pct_households_with_children low` | +5 | Census |
 | `absentee_owner_flag == True` | +5 | Recorder |
 | `open_lien_count == 0` | +5 | PropWire |
 
@@ -308,11 +376,13 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 
 | Signal | Points | Source |
 |---|---|---|
-| `out_of_state_flag == True` | +30 | Recorder |
-| `absentee_owner_flag == True` | +20 | Recorder / PropWire |
-| `corporate_owner_flag == True` | +15 | PropWire |
-| `tax_delinquency_flag == True` | +15 | Cook County |
-| `open_violation_flag == True` | +10 | Chicago Data Portal |
+| `out_of_state_flag == True` | +25 | Recorder |
+| `absentee_owner_flag == True` | +15 | Recorder / PropWire |
+| `divorce_flag == True` | +15 | PropStream |
+| `corporate_owner_flag == True` | +10 | PropWire |
+| `tax_delinquency_flag == True` | +10 | Cook County |
+| `nod_flag == True` | +10 | PropStream |
+| `open_violation_flag == True` | +5 | Chicago Data Portal |
 | `years_owned >= 7` | +10 | Assessor |
 
 ### 6.7 School District Movers
@@ -330,11 +400,13 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 
 | Signal | Points | Source |
 |---|---|---|
-| `investor_flag == True` | +25 | PropWire |
-| `absentee_owner_flag == True` | +20 | Recorder / PropWire |
+| `investor_flag == True` | +20 | PropWire |
+| `absentee_owner_flag == True` | +15 | Recorder / PropWire |
 | `portfolio_size > 1` | +15 | PropWire |
-| `price_to_rent_ratio <= 20` | +15 | Derived |
-| `corporate_owner_flag == True` | +15 | PropWire |
+| `second_mortgage_flag == True` | +10 | PropStream |
+| `price_to_rent_ratio <= 20` | +10 | Derived |
+| `corporate_owner_flag == True` | +10 | PropWire |
+| `refi_count >= 2` | +10 | PropStream |
 | `zip_zori high` | +10 | Zillow |
 
 ### 6.9 Likely to Rent Out
@@ -342,9 +414,10 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 | Signal | Points | Source |
 |---|---|---|
 | `investor_flag == True` | +20 | PropWire |
-| `absentee_owner_flag == True` | +20 | Recorder |
-| `price_to_rent_ratio <= 18` | +20 | Derived |
+| `absentee_owner_flag == True` | +15 | Recorder |
+| `price_to_rent_ratio <= 18` | +15 | Derived |
 | `zip_zori high` | +15 | Zillow |
+| `second_mortgage_flag == False` | +10 | PropStream |
 | `open_lien_count == 0` | +10 | PropWire |
 | `estimated_equity_pct >= 0.40` | +10 | Derived |
 | `corporate_owner_flag == True` | +5 | PropWire |
@@ -370,12 +443,13 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 - Sortable by any score for agent use
 - Refreshed monthly
 
-### 7.2 Dashboard
+### 7.2 Dashboard (Streamlit)
 - Filter by use case score threshold
 - Map view of properties (color-coded by score)
-- Property detail panel (all fields)
+- Property detail panel (all fields including PropStream data)
+- Life event & distress alert badges on flagged properties
 - Export filtered results to CSV
-- Built on: TBD (Streamlit / Metabase / Grafana — to be decided in Architecture phase)
+- Deployed on Streamlit Cloud for remote access (iPad demo-ready)
 
 ---
 
@@ -384,7 +458,7 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 | Layer | Tool |
 |---|---|
 | Language | Python 3.11+ |
-| Data ingestion | `requests`, `sodapy` (Socrata), `census` |
+| Data ingestion | `requests`, `sodapy` (Socrata), `census`, PropStream API/export |
 | Data processing | `pandas`, `geopandas` |
 | Storage | Parquet files (local, v1) → PostgreSQL (v2) |
 | Scoring | Custom Python scoring engine |
@@ -397,10 +471,11 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 ## 9. Constraints & Assumptions
 
 - **ZIP 60610 only** for v1 POC
-- **No PII storage** beyond what is in the public record
+- **No PII storage** beyond what is in the public record and PropStream data
 - **No automated outreach** — agent manually uses the export
 - Monthly data refresh is acceptable; real-time is not required
 - Free data sources may have rate limits; ingestion scripts must handle throttling
+- PropStream subscription ($99/mo) required for pre-foreclosure, life event, mortgage, and listing history data
 - Address matching across sources will require fuzzy matching (PIN is not always available)
 
 ---
@@ -409,10 +484,12 @@ Each property receives a score (0–100) per use case. Scores are computed by su
 
 | # | Question | Owner | Status |
 |---|---|---|---|
-| 1 | Which dashboard tool? (Streamlit vs. Metabase vs. existing GitLab setup) | User | Open |
+| 1 | Which dashboard tool? | User | **Resolved** — Streamlit, deployed on Streamlit Cloud |
 | 2 | Should skip-trace phone/email be included in v1 or only v2? | User | Open |
 | 3 | What is the refresh cadence for agent use? (weekly vs. monthly) | User | Open |
-| 4 | Will PropStream ($99/mo) be added for supplemental mortgage/demographic data? | User | Open |
+| 4 | Will PropStream ($99/mo) be added? | User | **Resolved** — Yes, adding PropStream for pre-foreclosure, life events, mortgage, and listing history |
+| 5 | PropStream ingestion method: API vs. bulk CSV export? | Dev | Open |
+| 6 | How to handle PropStream data for properties with no match (coverage gaps)? | Dev | Open |
 
 ---
 
